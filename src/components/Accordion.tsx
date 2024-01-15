@@ -1,18 +1,29 @@
-import { ComponentType, ElementType, forwardRef, ReactNode } from "react";
+import {
+  ComponentType,
+  createContext,
+  ElementType,
+  forwardRef,
+  ReactNode,
+  useContext,
+} from "react";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
 const BUTTON_NAME = "AccordionTrigger";
 const PANEL_NAME = "AccordionPanel";
+const ACCORDION_CONTEXT = "AccordionContext";
+const ACCORDION_ITEM_CONTEXT = "AccordionItemContext";
 
 const Accordion = forwardRef(function (
   { children, as: Comp = "div", ...props }: AccordionProps,
   forwardedRef
 ) {
   return (
-    <Comp {...props} ref={forwardedRef} data-hb-accordion="">
-      {children}
-    </Comp>
+    <AccordionContext.Provider value={{}}>
+      <Comp {...props} ref={forwardedRef} data-hb-accordion="">
+        {children}
+      </Comp>
+    </AccordionContext.Provider>
   );
 });
 
@@ -21,9 +32,11 @@ const AccordionItem = forwardRef(function (
   forwardedRef
 ) {
   return (
-    <Comp {...props} ref={forwardedRef} data-hb-accordion-item="">
-      {children}
-    </Comp>
+    <AccordionItemContext.Provider value={{}}>
+      <Comp {...props} ref={forwardedRef} data-hb-accordion-item="">
+        {children}
+      </Comp>
+    </AccordionItemContext.Provider>
   );
 });
 
@@ -49,10 +62,31 @@ const AccordionPanel = forwardRef(function (
   );
 });
 
+const AccordionContext = createContext({});
+const AccordionItemContext = createContext({});
+
+const useAccordionContext = () => {
+  const context = useContext(AccordionContext);
+  if (!context) {
+    throw Error("useAccordionContext must be used within Accordion.");
+  }
+  return context;
+};
+
+const useAccordionItemContext = () => {
+  const context = useContext(AccordionItemContext);
+  if (!context) {
+    throw Error("useAccordionItemContext must be used within AccordionItem.");
+  }
+  return context;
+};
+
 Accordion.displayName = ACCORDION_NAME;
 AccordionItem.displayName = ITEM_NAME;
 AccordionButton.displayName = BUTTON_NAME;
 AccordionPanel.displayName = PANEL_NAME;
+AccordionContext.displayName = ACCORDION_CONTEXT;
+AccordionItemContext.displayName = ACCORDION_ITEM_CONTEXT;
 
 const AccordionNamespace = Object.assign(Accordion, {
   Item: AccordionItem,

@@ -3,7 +3,7 @@ import { Accordion } from "./components/Accordion.tsx";
 function App() {
   return (
     <>
-      <Accordion as="p">
+      <Accordion>
         <Accordion.Item>
           <Accordion.Button>Button 1</Accordion.Button>
           <Accordion.Panel>Panel 1</Accordion.Panel>
