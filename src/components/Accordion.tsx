@@ -58,6 +58,11 @@ const Accordion = forwardRef(function (
 
   const onAccordionItemClick = useCallback(
     (index: number) => {
+      if (controlledIndex != undefined) {
+        onChange && onChange(index);
+        return;
+      }
+
       setOpenPanels((prevOpenPanels) => {
         if (multiple) {
           prevOpenPanels = prevOpenPanels as number[];
@@ -77,11 +82,11 @@ const Accordion = forwardRef(function (
         return prevOpenPanels;
       });
     },
-    [multiple, collapsible]
+    [multiple, collapsible, onChange, controlledIndex]
   );
 
   const context = {
-    openPanels,
+    openPanels: controlledIndex ? controlledIndex : openPanels,
     onAccordionItemClick: readOnly ? noop : onAccordionItemClick,
     readOnly,
   };

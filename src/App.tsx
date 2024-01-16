@@ -1,9 +1,22 @@
 import { Accordion } from "./components/Accordion.tsx";
+import { useState } from "react";
 
 function App() {
+  const [openAccordions, setOpenAccordion] = useState([0, 2]);
+
+  const handleAccordionChange = (index: number) => {
+    setOpenAccordion((prev) => {
+      if (prev.includes(index)) {
+        return prev.filter((i) => i !== index);
+      } else {
+        return [...prev, index].sort();
+      }
+    });
+  };
+
   return (
     <>
-      <Accordion defaultIndex={[0, 1]} multiple collapsible>
+      <Accordion index={openAccordions} onChange={handleAccordionChange}>
         <Accordion.Item index={0}>
           <Accordion.Button>Button 1</Accordion.Button>
           <Accordion.Panel>Panel 1</Accordion.Panel>
