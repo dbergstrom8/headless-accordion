@@ -15,7 +15,17 @@ const ACCORDION_CONTEXT = "AccordionContext";
 const ACCORDION_ITEM_CONTEXT = "AccordionItemContext";
 
 const Accordion = forwardRef(function (
-  { children, as: Comp = "div", ...props }: AccordionProps,
+  {
+    children,
+    as: Comp = "div",
+    defaultIndex,
+    index: controlledIndex,
+    onChange,
+    multiple = false,
+    readOnly = false,
+    collapsible = false,
+    ...props
+  }: AccordionProps,
   forwardedRef
 ) {
   return (
@@ -28,7 +38,12 @@ const Accordion = forwardRef(function (
 });
 
 const AccordionItem = forwardRef(function (
-  { children, as: Comp = "div", ...props }: AccordionItemProps,
+  {
+    children,
+    as: Comp = "div",
+    disabled = false,
+    ...props
+  }: AccordionItemProps,
   forwardedRef
 ) {
   return (
