@@ -6,6 +6,10 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
 } from "react";
 import { useControlledState } from "../utils/useControlledState.ts";
 
@@ -89,10 +93,30 @@ const Accordion = forwardRef(function (
     [multiple, collapsible, onChange, controlledIndex]
   );
 
+  const indexCounter = useRef(-1);
+  const descendantsMap = useRef<Record<string, number>>({});
+
+  // This useLayoutEffect cleanup is to cleanup the extra render in the strict mode
+  // Cleanup hack for now
+  useLayoutEffect(() => {
+    return () => {
+      indexCounter.current = -1;
+      descendantsMap.current = {};
+    };
+  }, []);
+
+  const getIndex = useCallback((id: string) => {
+    if (!descendantsMap.current[id]) {
+      descendantsMap.current[id] = ++indexCounter.current;
+    }
+    return descendantsMap.current[id];
+  }, []);
+
   const context = {
     openPanels: controlledIndex ? controlledIndex : openPanels,
     onAccordionItemClick: readOnly ? noop : onAccordionItemClick,
     readOnly,
+    getIndex,
   };
 
   return (
@@ -109,12 +133,18 @@ const AccordionItem = forwardRef(function (
     children,
     as: Comp = "div",
     disabled = false,
-    index,
     ...props
   }: AccordionItemProps,
   forwardedRef
 ) {
-  const { openPanels } = useAccordionContext();
+  const { openPanels, getIndex } = useAccordionContext();
+
+  const itemId = useRef<string>(useId());
+  const [index, setIndex] = useState(-1);
+
+  useLayoutEffect(() => {
+    setIndex(getIndex(itemId.current));
+  }, [getIndex]);
 
   const state =
     (Array.isArray(openPanels)
@@ -239,7 +269,6 @@ interface AccordionItemProps {
   as?: ElementType | ComponentType;
   children: ReactNode;
   disabled?: boolean;
-  index: number;
 }
 
 interface AccordionButtonProps {
@@ -258,6 +287,7 @@ interface InternalAccordionContextValue {
   onAccordionItemClick(index: AccordionIndex): void;
 
   readOnly: boolean;
+  getIndex: (id: string) => number;
 }
 
 interface InternalAccordionItemContextValue {
