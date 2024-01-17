@@ -6,8 +6,8 @@ import {
   ReactNode,
   useCallback,
   useContext,
-  useState,
 } from "react";
+import { useControlledState } from "../utils/useControlledState.ts";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -37,23 +37,27 @@ const Accordion = forwardRef(function (
   }: AccordionProps,
   forwardedRef
 ) {
-  const [openPanels, setOpenPanels] = useState(() => {
-    if (defaultIndex != null) {
-      if (multiple) {
-        // If multiple is set to true, we need to make sure the `defaultIndex`
-        // is an array (and vice versa).
-        return Array.isArray(defaultIndex) ? defaultIndex : [defaultIndex];
-      } else {
-        return Array.isArray(defaultIndex)
-          ? defaultIndex[0] ?? 0
-          : defaultIndex;
+  const [openPanels, setOpenPanels] = useControlledState({
+    controlledValue: controlledIndex,
+    defaultValue: () => {
+      if (defaultIndex != null) {
+        if (multiple) {
+          // If multiple is set to true, we need to make sure the `defaultIndex`
+          // is an array (and vice versa).
+          return Array.isArray(defaultIndex) ? defaultIndex : [defaultIndex];
+        } else {
+          return Array.isArray(defaultIndex)
+            ? defaultIndex[0] ?? 0
+            : defaultIndex;
+        }
       }
-    }
-    if (collapsible) {
-      // collapsible with no defaultIndex will start with all panels collapsed
-      return multiple ? [] : -1;
-    }
-    return multiple ? [0] : 0;
+      if (collapsible) {
+        // collapsible with no defaultIndex will start with all panels collapsed
+        return multiple ? [] : -1;
+      }
+      return multiple ? [0] : 0;
+    },
+    calledFrom: "Accordion",
   });
 
   const onAccordionItemClick = useCallback(
