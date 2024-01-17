@@ -6,12 +6,13 @@ import {
   ReactNode,
   useCallback,
   useContext,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
 } from "react";
 import { useControlledState } from "../utils/useControlledState.ts";
+import {
+  Descendants,
+  useDescendant,
+  useDescendants,
+} from "../utils/descendants.tsx";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -93,38 +94,22 @@ const Accordion = forwardRef(function (
     [multiple, collapsible, onChange, controlledIndex]
   );
 
-  const indexCounter = useRef(-1);
-  const descendantsMap = useRef<Record<string, number>>({});
-
-  // This useLayoutEffect cleanup is to cleanup the extra render in the strict mode
-  // Cleanup hack for now
-  useLayoutEffect(() => {
-    return () => {
-      indexCounter.current = -1;
-      descendantsMap.current = {};
-    };
-  }, []);
-
-  const getIndex = useCallback((id: string) => {
-    if (!descendantsMap.current[id]) {
-      descendantsMap.current[id] = ++indexCounter.current;
-    }
-    return descendantsMap.current[id];
-  }, []);
-
   const context = {
     openPanels: controlledIndex ? controlledIndex : openPanels,
     onAccordionItemClick: readOnly ? noop : onAccordionItemClick,
     readOnly,
-    getIndex,
   };
 
+  const descendantContext = useDescendants();
+
   return (
-    <AccordionContext.Provider value={context}>
-      <Comp {...props} ref={forwardedRef} data-hb-accordion="">
-        {children}
-      </Comp>
-    </AccordionContext.Provider>
+    <Descendants value={descendantContext}>
+      <AccordionContext.Provider value={context}>
+        <Comp {...props} ref={forwardedRef} data-hb-accordion="">
+          {children}
+        </Comp>
+      </AccordionContext.Provider>
+    </Descendants>
   );
 });
 
@@ -137,14 +122,8 @@ const AccordionItem = forwardRef(function (
   }: AccordionItemProps,
   forwardedRef
 ) {
-  const { openPanels, getIndex } = useAccordionContext();
-
-  const itemId = useRef<string>(useId());
-  const [index, setIndex] = useState(-1);
-
-  useLayoutEffect(() => {
-    setIndex(getIndex(itemId.current));
-  }, [getIndex]);
+  const { openPanels } = useAccordionContext();
+  const index = useDescendant();
 
   const state =
     (Array.isArray(openPanels)
@@ -287,7 +266,6 @@ interface InternalAccordionContextValue {
   onAccordionItemClick(index: AccordionIndex): void;
 
   readOnly: boolean;
-  getIndex: (id: string) => number;
 }
 
 interface InternalAccordionItemContextValue {
