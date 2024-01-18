@@ -6,6 +6,7 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useId,
 } from "react";
 import { useControlledState } from "../utils/useControlledState.ts";
 import {
@@ -13,6 +14,7 @@ import {
   useDescendant,
   useDescendants,
 } from "../utils/descendants.tsx";
+import { makeId } from "../utils/makeId.ts";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -22,6 +24,10 @@ const ACCORDION_CONTEXT = "AccordionContext";
 const ACCORDION_ITEM_CONTEXT = "AccordionItemContext";
 
 export function noop() {}
+
+function getDataState(state: AccordionStates) {
+  return state === AccordionStates.Open ? "open" : "collapsed";
+}
 
 enum AccordionStates {
   Open = "OPEN",
@@ -91,13 +97,16 @@ const Accordion = forwardRef(function (
         return prevOpenPanels;
       });
     },
-    [multiple, collapsible, onChange, controlledIndex]
+    [controlledIndex, setOpenPanels, onChange, multiple, collapsible]
   );
+
+  const id = useId();
 
   const context = {
     openPanels: controlledIndex ? controlledIndex : openPanels,
     onAccordionItemClick: readOnly ? noop : onAccordionItemClick,
     readOnly,
+    accordionId: id,
   };
 
   const descendantContext = useDescendants();
@@ -122,7 +131,7 @@ const AccordionItem = forwardRef(function (
   }: AccordionItemProps,
   forwardedRef
 ) {
-  const { openPanels } = useAccordionContext();
+  const { openPanels, accordionId, readOnly } = useAccordionContext();
   const index = useDescendant();
 
   const state =
@@ -131,15 +140,29 @@ const AccordionItem = forwardRef(function (
       : openPanels === index && AccordionStates.Open) ||
     AccordionStates.Collapsed;
 
+  const itemId = makeId(accordionId, index);
+  const panelId = makeId("panel", itemId);
+  const buttonId = makeId("button", itemId);
+
   const context = {
     index,
     state,
     disabled,
+    itemId,
+    panelId,
+    buttonId,
   };
 
   return (
     <AccordionItemContext.Provider value={context}>
-      <Comp {...props} ref={forwardedRef} data-hb-accordion-item="">
+      <Comp
+        {...props}
+        ref={forwardedRef}
+        data-hb-accordion-item=""
+        data-state={getDataState(state)}
+        data-disabled={disabled ? "" : undefined}
+        data-read-only={readOnly ? "" : undefined}
+      >
         {children}
       </Comp>
     </AccordionItemContext.Provider>
@@ -151,7 +174,8 @@ const AccordionButton = forwardRef(function (
   forwardedRef
 ) {
   const { onAccordionItemClick } = useAccordionContext();
-  const { disabled, index } = useAccordionItemContext();
+  const { disabled, index, buttonId, panelId, state } =
+    useAccordionItemContext();
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -163,10 +187,14 @@ const AccordionButton = forwardRef(function (
 
   return (
     <Comp
+      aria-controls={panelId}
+      aria-expanded={state === AccordionStates.Open}
       {...props}
       ref={forwardedRef}
       data-hb-accordion-button=""
       onClick={handleTriggerClick}
+      disabled={disabled || undefined}
+      id={buttonId}
     >
       {children}
     </Comp>
@@ -177,14 +205,19 @@ const AccordionPanel = forwardRef(function (
   { children, as: Comp = "div", ...props }: AccordionPanelProps,
   forwardedRef
 ) {
-  const { state } = useAccordionItemContext();
+  const { state, disabled, panelId, buttonId } = useAccordionItemContext();
 
   return (
     <Comp
+      role="region"
+      aria-labelledby={buttonId}
       {...props}
       ref={forwardedRef}
       data-hb-accordion-panel=""
       hidden={state !== AccordionStates.Open}
+      data-disabled={disabled || undefined}
+      data-state={getDataState(state)}
+      id={panelId}
     >
       {children}
     </Comp>
@@ -262,6 +295,7 @@ interface AccordionPanelProps {
 
 interface InternalAccordionContextValue {
   openPanels: AccordionIndex;
+  accordionId: string;
 
   onAccordionItemClick(index: AccordionIndex): void;
 
@@ -272,4 +306,7 @@ interface InternalAccordionItemContextValue {
   index: number;
   disabled: boolean;
   state: AccordionStates;
+  itemId: string;
+  panelId: string;
+  buttonId: string;
 }
