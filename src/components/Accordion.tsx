@@ -7,11 +7,13 @@ import {
   useCallback,
   useContext,
   useId,
+  useRef,
 } from "react";
 import { useControlledState } from "../utils/useControlledState.ts";
 import {
   Descendants,
   useDescendant,
+  useDescendantContext,
   useDescendants,
 } from "../utils/descendants.tsx";
 import { makeId } from "../utils/makeId.ts";
@@ -22,6 +24,15 @@ const BUTTON_NAME = "AccordionTrigger";
 const PANEL_NAME = "AccordionPanel";
 const ACCORDION_CONTEXT = "AccordionContext";
 const ACCORDION_ITEM_CONTEXT = "AccordionItemContext";
+
+const ACCORDION_ALLOWED_KEYS = [
+  "ArrowUp",
+  "ArrowDown",
+  "PageUp",
+  "PageDown",
+  "Home",
+  "End",
+];
 
 export function noop() {}
 
@@ -132,7 +143,8 @@ const AccordionItem = forwardRef(function (
   forwardedRef
 ) {
   const { openPanels, accordionId, readOnly } = useAccordionContext();
-  const index = useDescendant();
+  const buttonRef = useRef<HTMLElement>(null);
+  const index = useDescendant({ element: buttonRef.current });
 
   const state =
     (Array.isArray(openPanels)
@@ -151,6 +163,7 @@ const AccordionItem = forwardRef(function (
     itemId,
     panelId,
     buttonId,
+    buttonRef,
   };
 
   return (
@@ -174,15 +187,118 @@ const AccordionButton = forwardRef(function (
   forwardedRef
 ) {
   const { onAccordionItemClick } = useAccordionContext();
-  const { disabled, index, buttonId, panelId, state } =
-    useAccordionItemContext();
+  const {
+    disabled,
+    index: accordionItemIndex,
+    buttonId,
+    panelId,
+    state,
+    buttonRef,
+  } = useAccordionItemContext();
+  const { map } = useDescendantContext();
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (disabled) {
       return;
     }
-    onAccordionItemClick(index);
+    buttonRef.current?.focus();
+    onAccordionItemClick(accordionItemIndex);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!ACCORDION_ALLOWED_KEYS.includes(e.key)) return;
+
+    let navIndex: { id: string; index: number } | Record<string, never> = {};
+
+    const selectableDescendants = Object.entries(map.current)
+      .reduce(
+        (ac: Array<{ id: string; index: number }>, cv) =>
+          !cv[1]?.props?.element?.disabled
+            ? [...ac, { id: cv[0], index: cv[1]?.index }]
+            : ac,
+        []
+      )
+      .sort((a, b) => a.index - b.index);
+
+    if (!selectableDescendants.length) {
+      return;
+    }
+
+    const selectableIndex = selectableDescendants.findIndex(
+      (descendant) => descendant?.index === accordionItemIndex
+    );
+
+    const getFirstOption = () => {
+      return selectableDescendants[0];
+    };
+
+    const getLastOption = () => {
+      return selectableDescendants[selectableDescendants.length - 1];
+    };
+
+    const getNextOption = () => {
+      const atBottom = accordionItemIndex === getLastOption().index;
+      return atBottom
+        ? getFirstOption()
+        : selectableDescendants[
+            (selectableIndex + 1) % selectableDescendants.length
+          ];
+    };
+
+    const getPrevOption = () => {
+      const atTop = accordionItemIndex === getFirstOption().index;
+      return atTop
+        ? getLastOption()
+        : selectableDescendants[
+            (selectableIndex - 1 + selectableDescendants.length) %
+              selectableDescendants.length
+          ];
+    };
+
+    switch (e.key) {
+      case "ArrowUp": {
+        e.preventDefault();
+        const prev = getPrevOption();
+        navIndex = prev ? prev : {};
+        break;
+      }
+      case "ArrowDown": {
+        e.preventDefault();
+        const next = getNextOption();
+        navIndex = next ? next : {};
+        break;
+      }
+      case "PageUp": {
+        e.preventDefault();
+        const prevOrFirst = (e.ctrlKey ? getPrevOption : getFirstOption)();
+        navIndex = prevOrFirst ? prevOrFirst : {};
+        break;
+      }
+      case "PageDown": {
+        e.preventDefault();
+        const nextOrLast = (e.ctrlKey ? getNextOption : getLastOption)();
+        navIndex = nextOrLast ? nextOrLast : {};
+        break;
+      }
+      case "Home": {
+        e.preventDefault();
+        const first = getFirstOption();
+        navIndex = first ? first : {};
+        break;
+      }
+      case "End": {
+        e.preventDefault();
+        const last = getLastOption();
+        navIndex = last ? last : {};
+        break;
+      }
+      default:
+        break;
+    }
+    if (navIndex.id != undefined) {
+      map.current[navIndex.id].props?.element?.focus();
+    }
   };
 
   return (
@@ -190,11 +306,12 @@ const AccordionButton = forwardRef(function (
       aria-controls={panelId}
       aria-expanded={state === AccordionStates.Open}
       {...props}
-      ref={forwardedRef}
+      ref={buttonRef}
       data-hb-accordion-button=""
       onClick={handleTriggerClick}
       disabled={disabled || undefined}
       id={buttonId}
+      onKeyDown={handleKeyDown}
     >
       {children}
     </Comp>
@@ -309,4 +426,5 @@ interface InternalAccordionItemContextValue {
   itemId: string;
   panelId: string;
   buttonId: string;
+  buttonRef: React.RefObject<HTMLElement>;
 }

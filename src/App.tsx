@@ -21,13 +21,21 @@ function App() {
           <Accordion.Button>Button 1</Accordion.Button>
           <Accordion.Panel>Panel 1</Accordion.Panel>
         </Accordion.Item>
-        <Accordion.Item>
+        <Accordion.Item disabled>
           <Accordion.Button>Button 2</Accordion.Button>
           <Accordion.Panel>Panel 2</Accordion.Panel>
         </Accordion.Item>
         <Accordion.Item>
           <Accordion.Button>Button 3</Accordion.Button>
           <Accordion.Panel>Panel 3</Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item>
+          <Accordion.Button>Button 4</Accordion.Button>
+          <Accordion.Panel>Panel 4</Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item>
+          <Accordion.Button>Button 5</Accordion.Button>
+          <Accordion.Panel>Panel 5</Accordion.Panel>
         </Accordion.Item>
       </Accordion>
     </>

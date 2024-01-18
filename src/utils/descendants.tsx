@@ -14,6 +14,16 @@ const DescendantContext = createContext<DescendantProviderProps>(
   {} as DescendantProviderProps
 );
 
+export const useDescendantContext = () => {
+  const context = useContext(DescendantContext);
+  if (!context) {
+    throw Error(
+      "useDescendantContext must be used within DescendantContext Provider"
+    );
+  }
+  return context;
+};
+
 export const Descendants = ({
   children,
   value,
@@ -58,7 +68,7 @@ export const useDescendants = () => {
  * @param {any} props - Props that will be exposed to the parent list
  */
 export const useDescendant = (props?: Record<string, any>) => {
-  const context = useContext(DescendantContext);
+  const context = useDescendantContext();
   const descendantId = useRef<string>();
   if (!descendantId.current) {
     descendantId.current = randomId();
@@ -68,7 +78,7 @@ export const useDescendant = (props?: Record<string, any>) => {
 
   useIsomorphicLayoutEffect(() => {
     setIndex(context?.getIndex(descendantId.current as string, props));
-  }, []);
+  });
 
   return index;
 };
