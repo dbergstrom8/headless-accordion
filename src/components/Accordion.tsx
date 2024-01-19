@@ -20,6 +20,7 @@ import {
 import { makeId } from "../utils/makeId.ts";
 import type * as Polymorphic from "../utils/polymorphic.ts";
 import { composeEventHandlers } from "../utils/composeEventHandlers.ts";
+import { useComposedRefs } from "../utils/composeRefs.ts";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -195,6 +196,8 @@ const AccordionButton = forwardRef(function (
   } = useAccordionItemContext();
   const { map } = useDescendantContext();
 
+  const ref = useComposedRefs(forwardedRef, buttonRef);
+
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (disabled) {
@@ -304,7 +307,7 @@ const AccordionButton = forwardRef(function (
       aria-controls={panelId}
       aria-expanded={state === AccordionStates.Open}
       {...props}
-      ref={buttonRef}
+      ref={ref}
       data-hb-accordion-button=""
       onClick={composeEventHandlers(onClick, handleTriggerClick)}
       disabled={disabled || undefined}
