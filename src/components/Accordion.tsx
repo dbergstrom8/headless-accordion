@@ -3,6 +3,7 @@ import {
   createContext,
   ElementType,
   forwardRef,
+  KeyboardEventHandler,
   ReactNode,
   useCallback,
   useContext,
@@ -17,6 +18,7 @@ import {
   useDescendants,
 } from "../utils/descendants.tsx";
 import { makeId } from "../utils/makeId.ts";
+import type * as Polymorphic from "../utils/polymorphic.ts";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -56,7 +58,7 @@ const Accordion = forwardRef(function (
     readOnly = false,
     collapsible = false,
     ...props
-  }: AccordionProps,
+  },
   forwardedRef
 ) {
   const [openPanels, setOpenPanels] = useControlledState({
@@ -131,19 +133,14 @@ const Accordion = forwardRef(function (
       </AccordionContext.Provider>
     </Descendants>
   );
-});
+}) as Polymorphic.ForwardRefComponent<"div", AccordionProps>;
 
 const AccordionItem = forwardRef(function (
-  {
-    children,
-    as: Comp = "div",
-    disabled = false,
-    ...props
-  }: AccordionItemProps,
+  { children, as: Comp = "div", disabled = false, ...props },
   forwardedRef
 ) {
   const { openPanels, accordionId, readOnly } = useAccordionContext();
-  const buttonRef = useRef<HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const index = useDescendant({ element: buttonRef.current });
 
   const state =
@@ -180,10 +177,10 @@ const AccordionItem = forwardRef(function (
       </Comp>
     </AccordionItemContext.Provider>
   );
-});
+}) as Polymorphic.ForwardRefComponent<"div", AccordionItemProps>;
 
 const AccordionButton = forwardRef(function (
-  { children, as: Comp = "button", ...props }: AccordionButtonProps,
+  { children, as: Comp = "button", ...props },
   forwardedRef
 ) {
   const { onAccordionItemClick } = useAccordionContext();
@@ -206,7 +203,7 @@ const AccordionButton = forwardRef(function (
     onAccordionItemClick(accordionItemIndex);
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown: KeyboardEventHandler<HTMLButtonElement> = (e) => {
     if (!ACCORDION_ALLOWED_KEYS.includes(e.key)) return;
 
     let navIndex: { id: string; index: number } | Record<string, never> = {};
@@ -316,10 +313,10 @@ const AccordionButton = forwardRef(function (
       {children}
     </Comp>
   );
-});
+}) as Polymorphic.ForwardRefComponent<"button", AccordionButtonProps>;
 
 const AccordionPanel = forwardRef(function (
-  { children, as: Comp = "div", ...props }: AccordionPanelProps,
+  { children, as: Comp = "div", ...props },
   forwardedRef
 ) {
   const { state, disabled, panelId, buttonId } = useAccordionItemContext();
@@ -339,7 +336,7 @@ const AccordionPanel = forwardRef(function (
       {children}
     </Comp>
   );
-});
+}) as Polymorphic.ForwardRefComponent<"div", AccordionPanelProps>;
 
 const AccordionContext = createContext<
   InternalAccordionContextValue | undefined
@@ -426,5 +423,5 @@ interface InternalAccordionItemContextValue {
   itemId: string;
   panelId: string;
   buttonId: string;
-  buttonRef: React.RefObject<HTMLElement>;
+  buttonRef: React.RefObject<HTMLButtonElement>;
 }
