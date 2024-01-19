@@ -19,6 +19,7 @@ import {
 } from "../utils/descendants.tsx";
 import { makeId } from "../utils/makeId.ts";
 import type * as Polymorphic from "../utils/polymorphic.ts";
+import { composeEventHandlers } from "../utils/composeEventHandlers.ts";
 
 const ACCORDION_NAME = "Accordion";
 const ITEM_NAME = "AccordionItem";
@@ -180,7 +181,7 @@ const AccordionItem = forwardRef(function (
 }) as Polymorphic.ForwardRefComponent<"div", AccordionItemProps>;
 
 const AccordionButton = forwardRef(function (
-  { children, as: Comp = "button", ...props },
+  { children, as: Comp = "button", onClick, onKeyDown, ...props },
   forwardedRef
 ) {
   const { onAccordionItemClick } = useAccordionContext();
@@ -305,10 +306,10 @@ const AccordionButton = forwardRef(function (
       {...props}
       ref={buttonRef}
       data-hb-accordion-button=""
-      onClick={handleTriggerClick}
+      onClick={composeEventHandlers(onClick, handleTriggerClick)}
       disabled={disabled || undefined}
       id={buttonId}
-      onKeyDown={handleKeyDown}
+      onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
     >
       {children}
     </Comp>
